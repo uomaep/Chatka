@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOGS_ABSOLUTE_PATH" value="./logs" />
+    <property name="LOG_PATTERN" value="%date %level %msg%n" />
+
+    <!-- 콘솔 출력 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_ABSOLUTE_PATH}/chatka.total.log</file>
+        <encoder>
+            <pattern></pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_ABSOLUTE_PATH}/chatka.total.log-%d{yyyy-MM-dd.HH}.gz</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+    <appender name="ERROR" class="ch.qos.logback.core.FileAppender">
+        <file>${LOGS_ABSOLUTE_PATH}/chatka.error.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_ABSOLUTE_PATH}/chatka.error.log-%d{yyyy-ww}.gz</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>Error</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="INFO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_ABSOLUTE_PATH}/chatka.message.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_ABSOLUTE_PATH}/chatka.message.log-%d{yyyy-MM-dd.HH}.gz</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="INFO2" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_ABSOLUTE_PATH}/chatka.failover.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_ABSOLUTE_PATH}/chatka.failover.log-%d{yyyy-MM-dd.HH}.gz</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <logger name="akka" level="OFF" />
+    <logger name="com.redis" level="OFF" />
+    <logger name="chat" level="DEBUG">
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="failover" level="DEBUG">
+        <appender-ref ref="INFO2"/>
+    </logger>
+
+
+    <root>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ERROR"/>
+        <appender-ref ref="INFO"/>
+    </root>
+    -->
+
+    <root level="DEBUG"> <!-- 로그 출력 기준 -->
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>
