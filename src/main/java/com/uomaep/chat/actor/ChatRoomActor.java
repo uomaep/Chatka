@@ -1,10 +1,11 @@
 package com.uomaep.chat.actor;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.ReceiveTimeout$;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import com.uomaep.chat.constants.EventConstants.*;
+import com.uomaep.chat.service.PubSubService;
 import scala.concurrent.duration.Duration;
 
 import java.util.HashSet;
@@ -12,7 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class ChatRoomActor extends AbstractActor {
+public class ChatRoomActor extends PubSubService {
     private final LoggingAdapter logger = Logging.getLogger(getContext().getSystem(), this);
     private final int roomId;
     private final String roomName;
@@ -38,7 +39,7 @@ public class ChatRoomActor extends AbstractActor {
     @Override
     public void preStart() throws Exception {
         logger.info("[{}] actor has created. {}", roomId, roomName);
-//        subscribe(self, roomName, redisIP, redisPort);
+        subscribe(self(), roomName, redisIP, redisPort);
     }
 
     @Override
@@ -60,13 +61,11 @@ public class ChatRoomActor extends AbstractActor {
     private String setRoomName(String envType) {
         String prefix = getContext().getSystem().settings().config().getString("akka.environment.pubsub-channel.prefix");
         String postfix = getContext().getSystem().settings().config().getString("akka.environment.pubsub-channel.postfix");
-        switch (envType) {
-            case "service":
-            case "dev":
-                return prefix + self().path().name() + postfix;
-            default:
-                return prefix + "unknown." + self().path().name() + postfix;
+
+        if(envType.equals("service") || envType.equals("dev")) {
+            return prefix + self().path().name() + postfix;
         }
+        return prefix + "unknown." + self().path().name() + postfix;
     }
 
     private String convertMsg4User(String msg) {
@@ -93,7 +92,6 @@ public class ChatRoomActor extends AbstractActor {
         if(isJoin) {
             user_count--;
         }
-
         users.remove(user);
 
         if(users.isEmpty()) destroyRoom();
@@ -107,6 +105,38 @@ public class ChatRoomActor extends AbstractActor {
 
     @Override
     public Receive createReceive() {
-        return null;
+        return receiveBuilder()
+                // 액터가 ReceiveTimeout 메시지를 받으면, 3시간 동안 유휴 상태인 것으로 간주하고 자신을 종료
+                .match(ReceiveTimeout$.class, receiveTimeout$ -> {
+                    logger.info("I've been idle for over 3 hours. Terminating myself");
+                    destroyRoom();
+                })
+                // Join 메시지를 받으면, 해당 채팅방에 사용자가 입장했음을 로그에 기록하고 사용자를 업데이트
+                .match(Join.class, join -> {
+                    logger.info("[ChatRoomActor-{}] received Join Event: {}", roomId, roomName);
+                    updateIncrRoomUser(true, getSender());
+                })
+                // Leave 메시지를 받으면, 해당 채팅방에서 사용자가 퇴장했음을 로그에 기록하고 사용자를 업데이트
+                .match(Leave.class, leave -> {
+                    logger.info("[ChatRoomActor-{}] received Leave Event: {}", roomId, roomName);
+                    updateDecrRoomUser(false, getSender());
+                })
+                // Close 메시지를 받으면, 채팅방 액터를 종료
+                .match(Close.class, close -> {
+
+                })
+                .match(ChatMessageToUsers.class, msg -> {
+                    broadcast(msg.message);
+                })
+                .match(ChatMessage.class, msg -> {
+                    publish(roomName, msg.message);
+                })
+                .match(UnsubscribeMessage.class, msg -> {
+                    unSubscribe(self(), msg.channel);
+                })
+                .match(Terminated.class, o -> {
+                    logger.info("[-{}] receive Terminated Event: {}", roomId, roomName);
+                })
+                .build();
     }
 }
