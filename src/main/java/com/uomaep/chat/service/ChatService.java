@@ -4,17 +4,30 @@ import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
+import akka.actor.Props;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.Http;
 import akka.http.javadsl.model.RemoteAddress;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
+import akka.http.javadsl.server.Route;
+import akka.stream.ActorMaterializer;
+import akka.stream.ActorMaterializer$;
+import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.uomaep.chat.actor.ChatSupervisor;
+import com.uomaep.chat.actor.UserActor;
 import com.uomaep.chat.config.Environment;
+import com.uomaep.chat.constants.EventConstants.*;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
+
+import static akka.http.javadsl.server.Directives.*;
+import static akka.http.javadsl.server.PathMatchers.segment;
 
 public class ChatService extends WebService {
     private final int servicePort = 8000;
@@ -23,6 +36,21 @@ public class ChatService extends WebService {
     private ActorRef chatSupervisor;
     private HttpClient httpClient;
     private final String env;
+
+    public Route createServiceRoute() {
+        return path(segment(), chatRoomIDStr -> {
+            int chatRoomID;
+            try {
+                chatRoomID = Integer.parseInt(chatRoomIDStr);
+            } catch(NumberFormatException e) {
+                return reject();
+            }
+
+            return extractClientIP(ip -> {
+                return handleWebSocketMessages(newUser(chatRoomID, ip));
+            });
+        });
+    }
 
     public ChatService(String env, ActorSystem system, AdminService adminService) {
         this.system = system;
@@ -58,12 +86,19 @@ public class ChatService extends WebService {
 
     // 서버로부터 클라이언트로 메시지를 보내기 위한 Source를 정의하는 메서드
     public Source<Message, NotUsed> outMessage(ActorRef userActor) {
-        return null;
+        return Source.<OutMessage>actorRef(
+                256,
+                OverflowStrategy.dropHead()
+        ).mapMaterializedValue(outActor -> {
+            userActor.tell(new Connected(outActor), ActorRef.noSender());
+            return NotUsed.getInstance();
+        }).map(outMsg -> TextMessage.create(outMsg.text));
     }
 
     // 새로운 사용자에 대한 웹소켓 연결을 처리하는 Flow를 생성하는 메서드
     public Flow<Message, Message, NotUsed> newUser(int chatRoomID, RemoteAddress ip) {
-        ActorRef userActor = null;
+        System.out.println("new user");
+        ActorRef userActor = system.actorOf(Props.create(UserActor.class, chatRoomID, chatSupervisor, httpClient, ip));
 
         // 사용자 액터로부터 오는 메시지를 처리하는 Sink
         Sink<Message, NotUsed> inMessage = inMessage(userActor);
@@ -79,6 +114,14 @@ public class ChatService extends WebService {
     public void start() {
         System.out.println("Chat Server Starting ...");
         Environment.setEnvType(env);
+
+        chatSupervisor = system.actorOf(Props.create(ChatSupervisor.class, system), "cs");
+        adminService.setChatSupervisor(chatSupervisor);
+
+        registerNode(servicePort);
+        Http.get(system).newServerAt("localhost", servicePort).bind(createServiceRoute());
+
+        Environment.loadRedisConfig(system);
     }
 
     @Override

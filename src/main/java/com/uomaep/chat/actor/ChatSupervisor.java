@@ -8,7 +8,6 @@ import com.uomaep.chat.config.Environment;
 import com.uomaep.chat.constants.EventConstants.*;
 import scala.concurrent.ExecutionContextExecutor;
 
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -26,7 +25,7 @@ public class ChatSupervisor extends AbstractActor {
 
     @Override
     public void preStart() throws Exception {
-        context().actorOf(Props.create(HttpClient.class), "httpClient");
+        ChatRooms.httpClient = getContext().actorOf(Props.create(HttpClient.class, system), "httpClient");
         logger.info("ChatSupervisor Starting ...");
     }
 
