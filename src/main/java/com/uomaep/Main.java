@@ -39,7 +39,7 @@ public class Main {
 
     private static void showUsageAndTerminate(ActorSystem system) {
         System.out.println("\nUsage: ");
-        System.out.println("mvn exec:java -Dexec.mainClass=\"Main\" -Dexec.args=\"[service|dev]\"\n");
+        System.out.println("mvn exec:java -Dexec.args=\"[service|dev]\"\n");
         system.terminate();
     }
 }
