@@ -105,7 +105,7 @@ public class ChatService extends WebService {
           userActor.tell(new Connected(outActor), ActorRef.noSender());
           return NotUsed.getInstance();
         }).map(outMsg -> {
-          logger.info("클라이언트로 메시지 보냄: {}", outMsg.text);
+          // logger.info("클라이언트로 메시지 보냄: {}", outMsg.text);
           return TextMessage.create(outMsg.text);
         });
   }

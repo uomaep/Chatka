@@ -74,6 +74,7 @@ public class ChatRoomActor extends PubSubService {
 
     private void broadcast(String msg) {
         String data = convertMsg4User(msg);
+        logger.info(users.size() + "명에게 브로드캐스트");
         for(ActorRef user: users) {
             user.tell(new ChatMessage(msg), self());
         }
