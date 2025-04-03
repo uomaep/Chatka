@@ -15,7 +15,8 @@
 
 ### Akka toolkit 특징
 <img width="382" alt="스크린샷 2025-04-03 오후 11 13 43" src="https://github.com/user-attachments/assets/46f28f54-08e7-40c5-b361-102e6adfa450" />
-- Actor
+
+- actor
   - 각각의 actor는 내부에 상태와 행동을 가지며, mailbox라는 queue가 할당된다.
   - actor 간에 서로 메시지를 주고받으며 수신한 메시지에 대해 각각 정의된 행동을 한 후 다음 actor로 메시지를 보낸다.
   - 메시지 패싱은 비동기적으로 이루어지기 때문에 메시지를 보낸 actor는 곧바로 자신의 mailbox에서 다음 메시지를 수신하여 일을 한다.
