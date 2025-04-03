@@ -13,6 +13,10 @@
 주기적으로 서버에서 Heartbeat 신호를 발생하여 클라이언트와의 WebSocket 연결을 안정적으로 유지  
 [application.conf](https://github.com/uomaep/Chatka/blob/main/src/main/resources/application.conf)의 141번 라인 http 블록 설정 확인
 
+### 발생한 문제
+부하테스트 중 WebSocket 연결 수가 많아졌을 때 연결 오류가 생겼습니다.  
+WebSocket 연결은 TCP 소켓을 사용하고, TCP 소켓은 파일 디스크립터(FD)를 소비하기 때문에, 열 수 있는 파일의 개수(ulimit -n)를 충분히 늘려줘야 한다는 점을 알았습니다.(해결)
+
 ### Akka toolkit 특징
 <img width="382" alt="스크린샷 2025-04-03 오후 11 13 43" src="https://github.com/user-attachments/assets/46f28f54-08e7-40c5-b361-102e6adfa450" />
 
